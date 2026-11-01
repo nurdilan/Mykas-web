@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>MyKas</title>
+<style>
+:root{--bg:#f3f6f1;--card:#fff;--ink:#16241c;--mute:#5d6e63;--line:#dbe3d8;--in:#1f7a4d;--out:#c0452f;--acc:#16241c;--accink:#f3f6f1;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media(prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0f1a14;--card:#17261d;--ink:#e8f0e9;--mute:#97aa9d;--line:#27392e;--in:#4fc58a;--out:#ef7f68;--acc:#e8f0e9;--accink:#0f1a14}}
+:root[data-theme="dark"]{--bg:#0f1a14;--card:#17261d;--ink:#e8f0e9;--mute:#97aa9d;--line:#27392e;--in:#4fc58a;--out:#ef7f68;--acc:#e8f0e9;--accink:#0f1a14}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.5 "Plus Jakarta Sans",system-ui,sans-serif}
+.wrap{max-width:860px;margin:0 auto;padding:16px}
+header{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:14px}
+h1{font:800 26px "Plus Jakarta Sans",sans-serif;margin:0;letter-spacing:-.5px}
+h2{font-size:17px;margin:0 0 10px}
+.badge{font-size:12px;padding:3px 10px;border-radius:99px;border:1px solid var(--line);color:var(--mute)}
+.badge.on{background:var(--in);color:#fff;border-color:var(--in)}
+button,input{font:inherit;color:inherit}
+button{cursor:pointer;border:1px solid var(--line);background:var(--card);border-radius:8px;padding:7px 12px}
+button.p{background:var(--acc);color:var(--accink);border-color:var(--acc)}
+button.d{color:var(--out)}
+button:focus-visible,input:focus-visible{outline:2px solid var(--in);outline-offset:2px}
+input{background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:8px 10px;width:100%}
+nav{display:flex;gap:4px;border-bottom:1px solid var(--line);margin-bottom:16px;overflow-x:auto}
+nav button{border:0;border-bottom:3px solid transparent;border-radius:0;background:none;padding:10px 14px;color:var(--mute);white-space:nowrap}
+nav button.a{color:var(--ink);border-color:var(--in);font-weight:700}
+.balance{background:var(--acc);color:var(--accink);border-radius:16px;padding:22px;margin-bottom:12px}
+.balance small{opacity:.7}
+.balance b{display:block;font-size:clamp(30px,8vw,46px);letter-spacing:-1px;line-height:1.15}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px;margin-bottom:12px}
+.grid .card{margin:0}
+.card small{color:var(--mute)}
+.card b{display:block;font-size:20px}
+.in{color:var(--in)}.out{color:var(--out)}
+.scroll{overflow-x:auto}
+table{border-collapse:collapse;width:100%;font-size:14px}
+th,td{padding:8px 6px;text-align:center;border-bottom:1px solid var(--line);white-space:nowrap}
+th:first-child,td:first-child{text-align:left;position:sticky;left:0;background:var(--card)}
+td input[type=checkbox]{width:20px;height:20px;accent-color:var(--in)}
+.row{display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap}
+.row>*{flex:1;min-width:120px}
+.row>button{flex:0 0 auto}
+.item{display:flex;justify-content:space-between;gap:10px;padding:10px 0;border-bottom:1px solid var(--line)}
+.item small{color:var(--mute);display:block}
+.empty{color:var(--mute);padding:14px 0;text-align:center}
+.bars{display:flex;align-items:flex-end;gap:6px;height:110px}
+.bars div{flex:1;display:flex;flex-direction:column;justify-content:flex-end;align-items:center;height:100%;font-size:11px;color:var(--mute)}
+.bars span{width:100%;background:var(--in);border-radius:4px 4px 0 0;min-height:2px}
+dialog{border:1px solid var(--line);border-radius:14px;background:var(--card);color:var(--ink);width:min(360px,92vw)}
+dialog::backdrop{background:rgba(0,0,0,.5)}
+.err{color:var(--out);font-size:13px;min-height:18px}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header>
+  <h1>MyKas</h1>
+  <div style="display:flex;gap:8px;align-items:center">
+    <span id="badge" class="badge">Mode lihat</span>
+    <button id="authBtn">Masuk admin</button>
+  </div>
+</header>
+<nav id="tabs">
+  <button data-t="dash" class="a">Dashboard</button>
+  <button data-t="in">Pemasukan</button>
+  <button data-t="out">Pengeluaran</button>
+</nav>
+<main id="main"></main>
+</div>
+
+<dialog id="dlg">
+  <h2 id="dlgT">Masuk admin</h2>
+  <input id="pw" type="password" placeholder="Password admin" autocomplete="off">
+  <div class="err" id="err"></div>
+  <div class="row" style="margin:0"><button id="dlgX">Batal</button><button class="p" id="dlgOk">Masuk</button></div>
+  <p style="font-size:12px;color:var(--mute);margin:10px 0 0">Password awal: <b>admin123</b>. Ganti segera setelah masuk.</p>
+</dialog>
+
+<script>
+const rp=n=>"Rp"+Math.round(n).toLocaleString("id-ID");
+const $=s=>document.querySelector(s);
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+let S={members:[{id:1,name:"Anggota 1"},{id:2,name:"Anggota 2"},{id:3,name:"Anggota 3"}],weeks:8,nominal:5000,checks:{},expenses:[],pass:"admin123",nid:4};
+try{const r=localStorage.getItem("mykas");if(r)S=Object.assign(S,JSON.parse(r))}catch(e){}
+let admin=false,tab="dash";
+const save=()=>{try{localStorage.setItem("mykas",JSON.stringify(S))}catch(e){}};
+const key=(m,w)=>m+"_"+w;
+const totalIn=()=>Object.values(S.checks).reduce((a,b)=>a+b,0);
+const totalOut=()=>S.expenses.reduce((a,e)=>a+e.amount,0);
+
+function render(){
+  $("#badge").textContent=admin?"Mode admin":"Mode lihat";
+  $("#badge").className="badge"+(admin?" on":"");
+  $("#authBtn").textContent=admin?"Keluar":"Masuk admin";
+  document.querySelectorAll("#tabs button").forEach(b=>b.classList.toggle("a",b.dataset.t===tab));
+  $("#main").innerHTML=tab==="dash"?dash():tab==="in"?income():expense();
+}
+
+function dash(){
+  const i=totalIn(),o=totalOut();
+  let bars="";
+  const perWeek=[];
+  for(let w=1;w<=S.weeks;w++){perWeek.push(S.members.reduce((a,m)=>a+(S.checks[key(m.id,w)]||0),0))}
+  const mx=Math.max(1,...perWeek);
+  perWeek.forEach((v,k)=>bars+=`<div><span style="height:${v/mx*80}px"></span>M${k+1}</div>`);
+  const paid=Object.keys(S.checks).length,all=S.members.length*S.weeks;
+  const recent=[...S.expenses].sort((a,b)=>b.date.localeCompare(a.date)).slice(0,5);
+  return `<div class="balance"><small>Saldo kas</small><b>${rp(i-o)}</b></div>
+  <div class="grid"><div class="card"><small>Total pemasukan</small><b class="in">${rp(i)}</b></div>
+  <div class="card"><small>Total pengeluaran</small><b class="out">${rp(o)}</b></div></div>
+  <div class="card"><h2>Pemasukan per minggu</h2><div class="bars">${bars}</div>
+  <small>${paid} dari ${all} iuran sudah terbayar (${all?Math.round(paid/all*100):0}%)</small></div>
+  <div class="card"><h2>Pengeluaran terbaru</h2>${recent.length?recent.map(e=>`<div class="item"><div>${esc(e.note)}<small>${e.date}</small></div><b class="out">-${rp(e.amount)}</b></div>`).join(""):'<div class="empty">Belum ada pengeluaran.</div>'}</div>`;
+}
+
+function income(){
+  let head="<th>Anggota</th>";
+  for(let w=1;w<=S.weeks;w++)head+=`<th>M${w}</th>`;
+  head+="<th>Total</th>"+(admin?"<th></th>":"");
+  const rows=S.members.map(m=>{
+    let tot=0,c="";
+    for(let w=1;w<=S.weeks;w++){const v=S.checks[key(m.id,w)];tot+=v||0;
+      c+=`<td><input type="checkbox" ${v?"checked":""} ${admin?"":"disabled"} onchange="tg(${m.id},${w},this.checked)" aria-label="${esc(m.name)} minggu ${w}"></td>`}
+    return `<tr><td>${esc(m.name)}</td>${c}<td>${rp(tot)}</td>${admin?`<td><button class="d" onclick="delM(${m.id})">Hapus</button></td>`:""}</tr>`}).join("");
+  const ctl=admin?`<div class="card"><h2>Pengaturan iuran</h2>
+    <div class="row"><input id="nom" type="number" min="0" step="500" value="${S.nominal}"><button class="p" onclick="setNom()">Ubah nominal</button></div>
+    <small>Nominal baru berlaku untuk ceklis berikutnya. Ceklis lama tetap memakai nominal saat dicentang.</small>
+    <div class="row" style="margin-top:12px"><input id="mn" placeholder="Nama anggota baru"><button onclick="addM()">Tambah anggota</button><button onclick="S.weeks++;save();render()">Tambah minggu</button></div></div>`:"";
+  return `<div class="card"><h2>Iuran mingguan: ${rp(S.nominal)}</h2>
+  ${S.members.length?`<div class="scroll"><table><tr>${head}</tr>${rows}</table></div>`:'<div class="empty">Belum ada anggota.</div>'}
+  ${admin?"":'<small>Masuk admin untuk mencentang iuran.</small>'}</div>${ctl}`;
+}
+
+function expense(){
+  const form=admin?`<div class="card"><h2>Catat pengeluaran</h2><div class="row">
+    <input id="en" placeholder="Untuk apa? (mis. beli spidol)"><input id="ea" type="number" min="0" placeholder="Jumlah (Rp)"><input id="ed" type="date" value="${new Date().toISOString().slice(0,10)}">
+    <button class="p" onclick="addE()">Simpan</button></div></div>`:"";
+  const list=[...S.expenses].sort((a,b)=>b.date.localeCompare(a.date));
+  return form+`<div class="card"><h2>Riwayat pengeluaran (${rp(totalOut())})</h2>${list.length?list.map(e=>`<div class="item"><div>${esc(e.note)}<small>${e.date}</small></div><div style="text-align:right"><b class="out">-${rp(e.amount)}</b>${admin?`<button class="d" onclick="delE(${e.id})">Hapus</button>`:""}</div></div>`).join(""):'<div class="empty">Belum ada pengeluaran.</div>'}</div>`+
+  (admin?`<div class="card"><h2>Ganti password admin</h2><div class="row"><input id="np" type="password" placeholder="Password baru (min. 4 karakter)"><button onclick="setPw()">Simpan</button></div></div>`:"");
+}
+
+function tg(m,w,v){if(!admin)return;if(v)S.checks[key(m,w)]=S.nominal;else delete S.checks[key(m,w)];save();render()}
+function setNom(){const v=+$("#nom").value;if(v>0){S.nominal=v;save();render()}}
+function addM(){const n=$("#mn").value.trim();if(!n)return;S.members.push({id:S.nid++,name:n});save();render()}
+function delM(id){if(!confirm("Hapus anggota ini beserta catatan iurannya?"))return;S.members=S.members.filter(m=>m.id!==id);Object.keys(S.checks).forEach(k=>{if(k.startsWith(id+"_"))delete S.checks[k]});save();render()}
+function addE(){const n=$("#en").value.trim(),a=+$("#ea").value,d=$("#ed").value;if(!n||!(a>0)||!d){alert("Isi keperluan, jumlah, dan tanggal.");return}S.expenses.push({id:Date.now(),note:n,amount:a,date:d});save();render()}
+function delE(id){if(!confirm("Hapus catatan ini?"))return;S.expenses=S.expenses.filter(e=>e.id!==id);save();render()}
+function setPw(){const p=$("#np").value;if(p.length<4){alert("Password minimal 4 karakter.");return}S.pass=p;save();alert("Password diganti.");$("#np").value=""}
+
+$("#tabs").onclick=e=>{if(e.target.dataset.t){tab=e.target.dataset.t;render()}};
+$("#authBtn").onclick=()=>{if(admin){admin=false;render()}else{$("#pw").value="";$("#err").textContent="";$("#dlg").showModal();$("#pw").focus()}};
+$("#dlgX").onclick=()=>$("#dlg").close();
+$("#dlgOk").onclick=()=>{if($("#pw").value===S.pass){admin=true;$("#dlg").close();render()}else $("#err").textContent="Password salah."};
+$("#pw").onkeydown=e=>{if(e.key==="Enter")$("#dlgOk").click()};
+render();
+</script>
+</body>
+</html>
